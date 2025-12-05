@@ -114,12 +114,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 final gapSmall = (8 * scale).clamp(6.0, 18.0);
                 final gapMedium = (14 * scale).clamp(8.0, 26.0);
 
+                // removed extra +12 bottom padding so footer image sits flush with bottom inset
                 return SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.only(bottom: bottomInset + 12),
+                  padding: EdgeInsets.only(bottom: bottomInset),
                   child: Column(
                     children: [
-                      // ⛔ REMOVED SPACING — NO MORE TOP GAP
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: maxW * 0.05),
                         child: safeImage(
@@ -128,7 +128,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
 
-                      // ⛔ REMOVED second SizedBox as well
                       Center(
                         child: Column(
                           children: [
@@ -464,8 +463,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
 
-                            const SizedBox(height: 8),
-
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: maxW * 0.05,
@@ -475,8 +472,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 height: footerHeight,
                               ),
                             ),
-
-                            const SizedBox(height: 20),
                           ],
                         ),
                       ),
