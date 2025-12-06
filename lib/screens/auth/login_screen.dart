@@ -102,7 +102,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 final scale = (maxW / 400).clamp(0.7, 1.8);
 
                 final headerWidth = (maxW * 0.90).clamp(180.0, maxW);
-                final footerHeight = (maxW * 0.28).clamp(60.0, 220.0);
+                final footerHeight = (maxW * 0.45).clamp(140.0, 360.0);
+
                 final cardWidth = (maxW * 0.88).clamp(260.0, 760.0);
 
                 final tinyScreen = maxW < 360;
