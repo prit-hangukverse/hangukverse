@@ -274,7 +274,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               foregroundColor: loginText,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(12),
+                                                    BorderRadius.circular(20),
                                               ),
                                             ),
                                             child: isLoading
