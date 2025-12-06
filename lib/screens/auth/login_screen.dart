@@ -415,6 +415,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     SizedBox(height: gapSmall),
 
                                     // Google button
+                                    // Replace the current Google button widget with this:
                                     SizedBox(
                                       height: btnHeight,
                                       child: ElevatedButton(
@@ -428,28 +429,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             ),
                                           ),
                                         ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.g_mobiledata,
+                                        child: Center(
+                                          child: Text(
+                                            "Continue with Google",
+                                            style: TextStyle(
                                               color: googleText,
+                                              fontWeight: FontWeight.w600,
                                             ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              "Continue with Google",
-                                              style: TextStyle(
-                                                color: googleText,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
+                                          ),
                                         ),
                                       ),
                                     ),
 
-                                    SizedBox(height: gapSmall),
+                                    SizedBox(height: 20),
 
                                     // Sign up prompt
                                     Center(

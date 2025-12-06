@@ -534,30 +534,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                                         ),
                                                   ),
                                                 ),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.g_mobiledata,
+                                                child: Center(
+                                                  child: Text(
+                                                    "Continue with Google",
+                                                    style: TextStyle(
                                                       color: googleText,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                     ),
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                      "Continue with Google",
-                                                      style: TextStyle(
-                                                        color: googleText,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
 
                                             // Already have account? prompt — same style as Login
-                                            SizedBox(height: gapSmall),
+                                            SizedBox(height: 20),
                                             Center(
                                               child: Container(
                                                 padding:
