@@ -1,9 +1,8 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hangukverse/routes/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'screens/auth/login_screen.dart';
+import 'screens/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,8 +30,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'HangukVerse',
       debugShowCheckedModeBanner: false,
-      initialRoute: LoginScreen.routeName,
-      routes: AppRoutes.routes, // <-- clean & organized in one place
+      // Start at the splash screen
+      initialRoute: SplashScreen.routeName,
+      routes: AppRoutes.routes,
       theme: ThemeData(useMaterial3: true),
     );
   }

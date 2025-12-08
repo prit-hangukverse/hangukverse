@@ -35,8 +35,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # assets:
-  #   - assets/Login/
+  assets:
+    - assets/
+    - assets/fonts/
+    - assets/welcome/
+
 
   fonts:
     - family: Kalnia

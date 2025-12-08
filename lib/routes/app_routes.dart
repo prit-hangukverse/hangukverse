@@ -3,6 +3,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/splash/splash_screen.dart';
 import '../screens/toggle/menu/home_menu_screen.dart';
 import '../screens/toggle/menu/about_us_menu_screen.dart';
 import '../screens/toggle/menu/community_menu_screen.dart';
@@ -13,9 +14,12 @@ import '../screens/toggle/menu/magazine_menu_screen.dart';
 import '../screens/toggle/menu/hangukverse_concert_menu_screen.dart';
 import '../screens/toggle/menu/setting_menu_screen.dart';
 import '../screens/toggle/menu/survey_menu_screen.dart';
+import '../screens/welcome/welcome_screen.dart';
 
 class AppRoutes {
   static Map<String, WidgetBuilder> routes = {
+    SplashScreen.routeName: (_) => const SplashScreen(),
+    WelcomeScreen.routeName: (_) => const WelcomeScreen(),
     LoginScreen.routeName: (_) => const LoginScreen(),
     RegisterScreen.routeName: (_) => const RegisterScreen(),
     ForgotPasswordScreen.routeName: (_) => const ForgotPasswordScreen(),

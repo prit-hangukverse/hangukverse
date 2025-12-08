@@ -16,6 +16,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  // ignore: unused_field
   String _name = '', _email = '', _password = '', _confirm = '';
   bool _agree = false;
 
