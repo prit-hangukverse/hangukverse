@@ -190,11 +190,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               builder: (context, constraints) {
                 return SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.only(bottom: bottomInset + 24),
+                  // <-- removed the extra +24 bottom gap so footer image sits flush
+                  padding: EdgeInsets.only(bottom: bottomInset),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: maxH),
                     child: Column(
-                      // header -> card -> footer (no extra gap)
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // HEADER IMAGE
                         Padding(

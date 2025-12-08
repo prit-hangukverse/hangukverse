@@ -1,53 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:hangukverse/screens/auth/login_screen.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   static const routeName = '/welcome';
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  bool isLoading = false;
 
   // ===========================================================
   // 🔧 SHARED DOOR CONTROL SETTINGS — CHANGE THESE ONLY
   // ===========================================================
 
-  /// Width of each door relative to screen (0.1 to 0.6 recommended)
   static const double doorWidthFactor = 0.50;
-
-  /// Optional fixed height. Set null to auto-scale with aspect ratio.
   static const double? doorHeight = null;
-
-  /// Shared zoom (1.0 = normal, <1 smaller, >1 bigger)
   static const double doorScale = 0.84;
-
-  /// Move both doors as a group: offset(dx, dy)
-  /// dx: + = right, - = left
-  /// dy: + = down, - = up
   static const Offset doorOffset = Offset(0, 100);
 
-  // ===========================================================
-  // 🔧 PER-DOOR OVERRIDES — SET TO null TO USE SHARED DEFAULTS
-  // ===========================================================
-
-  // Left door overrides (null => use shared)
+  // Left door
   static const double? leftDoorWidthFactor = null;
   static const double? leftDoorHeight = null;
   static const double? leftDoorScale = 0.77;
   static const Offset? leftDoorOffset = Offset(9, -30);
 
-  // Right door overrides (null => use shared)
+  // Right door
   static const double? rightDoorWidthFactor = null;
   static const double? rightDoorHeight = null;
   static const double? rightDoorScale = null;
   static const Offset? rightDoorOffset = Offset(-10, -30);
 
-  // ===========================================================
-  // 🖼 IMAGE URLS (UNCHANGED)
-  // ===========================================================
-
+  // Images
   static const String backgroundUrl =
       'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/home+page+for+phone+bg+1.png';
 
   static const String topAsset = 'assets/welcome/subtract.png';
-
   static const String subtract1Url =
       'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/Subtract-1.png';
 
@@ -57,145 +47,199 @@ class WelcomeScreen extends StatelessWidget {
   static const String rightDoorUrl =
       'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/DOOR+L+final+2.png';
 
+  static const String centerRectUrl =
+      'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/Rectangle.png';
+
+  static const double centerRectWidthFactor = 1.0;
+  static const double centerRectHeightFactor = 0.24;
+  static const Offset centerRectOffset = Offset(0, 65);
+
+  static const String centerGlampUrl =
+      'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/Glamping.png';
+
+  static const double glampScale = 1.10;
+  static const Offset glampOffset = Offset(0, 0);
+
+  // ===========================================================
   @override
   Widget build(BuildContext context) {
     final maxW = MediaQuery.of(context).size.width;
-
-    // ===========================================================
-    // ✅ RESOLVE EFFECTIVE LEFT DOOR SETTINGS
-    // ===========================================================
+    final maxH = MediaQuery.of(context).size.height;
 
     final double effectiveLeftWidthFactor =
         leftDoorWidthFactor ?? doorWidthFactor;
-
     final double effectiveLeftScale = leftDoorScale ?? doorScale;
-
     final double? effectiveLeftHeight = leftDoorHeight ?? doorHeight;
-
     final Offset effectiveLeftOffset = leftDoorOffset ?? Offset.zero;
-
-    // ===========================================================
-    // ✅ RESOLVE EFFECTIVE RIGHT DOOR SETTINGS
-    // ===========================================================
 
     final double effectiveRightWidthFactor =
         rightDoorWidthFactor ?? doorWidthFactor;
-
     final double effectiveRightScale = rightDoorScale ?? doorScale;
-
     final double? effectiveRightHeight = rightDoorHeight ?? doorHeight;
-
     final Offset effectiveRightOffset = rightDoorOffset ?? Offset.zero;
-
-    // ===========================================================
-    // ✅ COMPUTE FINAL DOOR WIDTHS (CLAMPED)
-    // ===========================================================
 
     final double leftWidth = (maxW * effectiveLeftWidthFactor).clamp(
       0.0,
       maxW / 2,
     );
-
     final double rightWidth = (maxW * effectiveRightWidthFactor).clamp(
       0.0,
       maxW / 2,
     );
 
-    // ===========================================================
-    // ✅ UI LAYOUT
-    // ===========================================================
+    final double rectWidth = maxW * centerRectWidthFactor;
+    final double rectHeight = maxW * centerRectHeightFactor;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // ===========================================================
-          // 🔹 BACKGROUND IMAGE
-          // ===========================================================
-          Positioned.fill(
-            child: Image.network(backgroundUrl, fit: BoxFit.cover),
-          ),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Colors.black,
+          extendBodyBehindAppBar: true,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned.fill(
+                child: Image.network(backgroundUrl, fit: BoxFit.cover),
+              ),
 
-          // ===========================================================
-          // 🔹 TOP + SUBTRACT-1 LAYER
-          // ===========================================================
-          SafeArea(
-            top: false,
-            bottom: false,
-            child: Column(
-              children: [
-                /// ✅ TOP IMAGE
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SizedBox(
-                        width: constraints.maxWidth,
-                        child: Transform.scale(
-                          scale: 1.05,
-                          child: Image.asset(topAsset, fit: BoxFit.contain),
+              SafeArea(
+                top: false,
+                bottom: false,
+                child: Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SizedBox(
+                            width: constraints.maxWidth,
+                            child: Transform.scale(
+                              scale: 1.05,
+                              child: Image.asset(topAsset, fit: BoxFit.contain),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: Image.network(
+                        subtract1Url,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Center(
+                child: Transform.translate(
+                  offset: doorOffset,
+                  child: Row(
+                    children: [
+                      Transform.translate(
+                        offset: effectiveLeftOffset,
+                        child: SizedBox(
+                          width: leftWidth,
+                          height: effectiveLeftHeight,
+                          child: Transform.scale(
+                            scale: effectiveLeftScale,
+                            alignment: Alignment.centerRight,
+                            child: Image.network(
+                              leftDoorUrl,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
-                      );
-                    },
+                      ),
+                      Transform.translate(
+                        offset: effectiveRightOffset,
+                        child: SizedBox(
+                          width: rightWidth,
+                          height: effectiveRightHeight,
+                          child: Transform.scale(
+                            scale: effectiveRightScale,
+                            alignment: Alignment.centerLeft,
+                            child: Image.network(
+                              rightDoorUrl,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
 
-                /// ✅ SUBTRACT-1 FILLER
-                Expanded(
-                  child: Image.network(
-                    subtract1Url,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
+              // -------------------------
+              // 🌟 GLAMPING CLICK ACTION
+              // -------------------------
+              Center(
+                child: Transform.translate(
+                  offset: centerRectOffset,
+                  child: SizedBox(
+                    width: rectWidth,
+                    height: rectHeight,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Image.network(
+                          centerRectUrl,
+                          fit: BoxFit.contain,
+                          width: rectWidth,
+                          height: rectHeight,
+                        ),
+
+                        // ------------------------------
+                        // USER CLICKS ON GLAMPING IMAGE
+                        // ------------------------------
+                        GestureDetector(
+                          onTap: () async {
+                            setState(() => isLoading = true);
+
+                            await Future.delayed(const Duration(seconds: 2));
+
+                            if (!mounted) return;
+
+                            setState(() => isLoading = false);
+
+                            Navigator.pushNamed(context, LoginScreen.routeName);
+                          },
+                          child: Transform.translate(
+                            offset: glampOffset,
+                            child: Transform.scale(
+                              scale: glampScale,
+                              child: Image.network(
+                                centerGlampUrl,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
 
-          // ===========================================================
-          // 🔥 DOORS — LEFT & RIGHT
-          // ===========================================================
-          Center(
-            child: Transform.translate(
-              offset: doorOffset,
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  // ✅ LEFT DOOR
-                  Transform.translate(
-                    offset: effectiveLeftOffset,
-                    child: SizedBox(
-                      width: leftWidth,
-                      height: effectiveLeftHeight,
-                      child: Transform.scale(
-                        scale: effectiveLeftScale,
-                        alignment: Alignment.centerRight,
-                        child: Image.network(leftDoorUrl, fit: BoxFit.cover),
-                      ),
-                    ),
-                  ),
-
-                  // ✅ RIGHT DOOR
-                  Transform.translate(
-                    offset: effectiveRightOffset,
-                    child: SizedBox(
-                      width: rightWidth,
-                      height: effectiveRightHeight,
-                      child: Transform.scale(
-                        scale: effectiveRightScale,
-                        alignment: Alignment.centerLeft,
-                        child: Image.network(rightDoorUrl, fit: BoxFit.cover),
-                      ),
-                    ),
-                  ),
-                ],
+        // ------------------------------
+        // LOADING OVERLAY (2 seconds)
+        // ------------------------------
+        if (isLoading)
+          Container(
+            color: Colors.black.withOpacity(0.55),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
