@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../welcome/welcome_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -11,36 +11,57 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  late VideoPlayerController _controller;
+
   @override
   void initState() {
     super.initState();
 
-    // Delay then navigate to Welcome screen. Use pushReplacement to remove splash.
-    Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, WelcomeScreen.routeName);
+    _controller =
+        VideoPlayerController.networkUrl(
+            Uri.parse(
+              "https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/splash/hangukverse.mp4",
+            ),
+          )
+          ..initialize().then((_) {
+            setState(() {});
+            _controller.play();
+          });
+
+    _controller.addListener(() {
+      final isFinished =
+          _controller.value.position >= _controller.value.duration &&
+          _controller.value.isInitialized;
+
+      if (isFinished) {
+        Navigator.pushReplacementNamed(context, WelcomeScreen.routeName);
+      }
     });
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Simple centered logo + loader — customize as you like
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Replace with your asset logo path
-              Image.asset('assets/logo.png', height: 120, fit: BoxFit.contain),
-              const SizedBox(height: 20),
-              const CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            ],
-          ),
-        ),
+      backgroundColor: Colors.black, // ✅ Full screen black background
+      body: Container(
+        color: Colors.black, // ✅ Ensures video background is black (not white)
+        child: _controller.value.isInitialized
+            ? Center(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 1,
+                  child: AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(_controller),
+                  ),
+                ),
+              )
+            : const SizedBox(),
       ),
     );
   }

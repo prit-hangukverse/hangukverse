@@ -1,21 +1,30 @@
-import 'package:flutter/material.dart';
-import 'package:hangukverse/screens/auth/login_screen.dart';
+// lib/screens/welcome/welcome_screen.dart
 
-class WelcomeScreen extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hangukverse/screens/auth/login_screen.dart';
+import 'package:hangukverse/screens/home/home_screen.dart';
+import '../../providers/auth_provider.dart';
+
+class WelcomeScreen extends ConsumerStatefulWidget {
   static const routeName = '/welcome';
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+  ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> {
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
+    with SingleTickerProviderStateMixin {
   bool isLoading = false;
+
+  /// When true, the Rectangle + Glamping images are hidden and the "Explore"
+  /// UI is shown (we reuse the same flag name for familiarity).
+  bool showExploreButton = false;
 
   // ===========================================================
   // 🔧 SHARED DOOR CONTROL SETTINGS — CHANGE THESE ONLY
   // ===========================================================
-
   static const double doorWidthFactor = 0.50;
   static const double? doorHeight = null;
   static const double doorScale = 0.84;
@@ -36,35 +45,125 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   // Images
   static const String backgroundUrl =
       'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/home+page+for+phone+bg+1.png';
-
   static const String topAsset = 'assets/welcome/subtract.png';
   static const String subtract1Url =
       'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/Subtract-1.png';
-
   static const String leftDoorUrl =
       'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/DOOR+L+final+1.png';
-
   static const String rightDoorUrl =
       'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/DOOR+L+final+2.png';
-
   static const String centerRectUrl =
       'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/Rectangle.png';
-
   static const double centerRectWidthFactor = 1.0;
   static const double centerRectHeightFactor = 0.24;
   static const Offset centerRectOffset = Offset(0, 65);
-
   static const String centerGlampUrl =
       'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/welcome/Glamping.png';
-
   static const double glampScale = 1.10;
   static const Offset glampOffset = Offset(0, 0);
-
   // ===========================================================
+
+  late final AnimationController _animController;
+  late final Animation<double> _doorCurve;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+
+    _doorCurve = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeInOutCubic,
+    );
+
+    _animController.addStatusListener((status) async {
+      if (status == AnimationStatus.completed) {
+        // optional slight pause to settle visuals
+        await Future.delayed(const Duration(milliseconds: 120));
+        if (!mounted) return;
+
+        setState(() {
+          isLoading = false;
+          showExploreButton = false;
+        });
+
+        // AFTER animation: check actual Supabase user presence using notifier
+        final supaUserPresent =
+            ref.read(authNotifierProvider.notifier).currentUser != null;
+
+        if (supaUserPresent) {
+          // user is authenticated -> proceed to Home
+          Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  /// Start door animation and show loading overlay until completion.
+  Future<void> _startAnimation() async {
+    if (_animController.isAnimating) return;
+    setState(() {
+      isLoading = true;
+    });
+    await _animController.forward();
+  }
+
+  /// Handle tap on either Rectangle or Glamping.
+  ///
+  /// - If unauthenticated: push LoginScreen (typed route). After successful login,
+  ///   show snackbar telling user to tap again (do NOT auto-start animation).
+  /// - If authenticated: hide images and start animation immediately.
+  Future<void> _handleCenterTapSource(String source) async {
+    // debug log which child was tapped
+    print('Tapped: $source');
+
+    final supaUserPresent =
+        ref.read(authNotifierProvider.notifier).currentUser != null;
+
+    if (!supaUserPresent) {
+      // push login as a typed route so we safely receive a bool? result
+      final bool? loginResult = await Navigator.of(context).push<bool?>(
+        MaterialPageRoute<bool?>(builder: (_) => const LoginScreen()),
+      );
+
+      print('LoginScreen returned: $loginResult');
+
+      if (loginResult == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login successful — tap again to enter'),
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    // Authenticated: hide images and start animation together
+    setState(() {
+      showExploreButton = true; // hides Rectangle + Glamping UI
+    });
+
+    // tiny delay to ensure UI paints the hide; keeps hide+animation visually simultaneous
+    await Future.delayed(const Duration(milliseconds: 8));
+
+    await _startAnimation();
+  }
+
   @override
   Widget build(BuildContext context) {
     final maxW = MediaQuery.of(context).size.width;
-    final maxH = MediaQuery.of(context).size.height;
 
     final double effectiveLeftWidthFactor =
         leftDoorWidthFactor ?? doorWidthFactor;
@@ -90,6 +189,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final double rectWidth = maxW * centerRectWidthFactor;
     final double rectHeight = maxW * centerRectHeightFactor;
 
+    final double leftMaxTranslate = -(leftWidth * 1.1);
+    final double rightMaxTranslate = (rightWidth * 1.1);
+
+    // reactive auth read for UI
+    final authState = ref.watch(authNotifierProvider);
+    final isAuthReactive = authState.userEmail != null;
+    final isAuthImmediate =
+        ref.read(authNotifierProvider.notifier).currentUser != null;
+    final isAuth = isAuthReactive || isAuthImmediate;
+
     return Stack(
       children: [
         Scaffold(
@@ -97,11 +206,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           extendBodyBehindAppBar: true,
           body: Stack(
             fit: StackFit.expand,
+            clipBehavior: Clip.none,
             children: [
+              // background image
               Positioned.fill(
                 child: Image.network(backgroundUrl, fit: BoxFit.cover),
               ),
 
+              // top asset + subtract1 (fades while doors open)
               SafeArea(
                 top: false,
                 bottom: false,
@@ -122,113 +234,203 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
                     ),
                     Expanded(
-                      child: Image.network(
-                        subtract1Url,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
+                      child: AnimatedBuilder(
+                        animation: _doorCurve,
+                        builder: (context, child) {
+                          final raw = 1.0 - (_doorCurve.value * 1.2);
+                          final opacity = raw.clamp(0.0, 1.0);
+                          return Opacity(opacity: opacity, child: child);
+                        },
+                        child: Image.network(
+                          subtract1Url,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              Center(
-                child: Transform.translate(
-                  offset: doorOffset,
-                  child: Row(
-                    children: [
-                      Transform.translate(
-                        offset: effectiveLeftOffset,
-                        child: SizedBox(
-                          width: leftWidth,
-                          height: effectiveLeftHeight,
-                          child: Transform.scale(
-                            scale: effectiveLeftScale,
-                            alignment: Alignment.centerRight,
-                            child: Image.network(
-                              leftDoorUrl,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Transform.translate(
-                        offset: effectiveRightOffset,
-                        child: SizedBox(
-                          width: rightWidth,
-                          height: effectiveRightHeight,
-                          child: Transform.scale(
-                            scale: effectiveRightScale,
-                            alignment: Alignment.centerLeft,
-                            child: Image.network(
-                              rightDoorUrl,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // doors + center interactive layer
+              Positioned.fill(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Animated doors
+                    Transform.translate(
+                      offset: doorOffset,
+                      child: AnimatedBuilder(
+                        animation: _doorCurve,
+                        builder: (context, child) {
+                          final t = _doorCurve.value;
+                          final leftTranslateX = leftMaxTranslate * t;
+                          final rightTranslateX = rightMaxTranslate * t;
 
-              // -------------------------
-              // 🌟 GLAMPING CLICK ACTION
-              // -------------------------
-              Center(
-                child: Transform.translate(
-                  offset: centerRectOffset,
-                  child: SizedBox(
-                    width: rectWidth,
-                    height: rectHeight,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Image.network(
-                          centerRectUrl,
-                          fit: BoxFit.contain,
-                          width: rectWidth,
-                          height: rectHeight,
-                        ),
-
-                        // ------------------------------
-                        // USER CLICKS ON GLAMPING IMAGE
-                        // ------------------------------
-                        GestureDetector(
-                          onTap: () async {
-                            setState(() => isLoading = true);
-
-                            await Future.delayed(const Duration(seconds: 2));
-
-                            if (!mounted) return;
-
-                            setState(() => isLoading = false);
-
-                            Navigator.pushNamed(context, LoginScreen.routeName);
-                          },
-                          child: Transform.translate(
-                            offset: glampOffset,
-                            child: Transform.scale(
-                              scale: glampScale,
-                              child: Image.network(
-                                centerGlampUrl,
-                                fit: BoxFit.contain,
+                          return Row(
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              // LEFT
+                              Transform.translate(
+                                offset: Offset(
+                                  effectiveLeftOffset.dx + leftTranslateX,
+                                  effectiveLeftOffset.dy,
+                                ),
+                                child: SizedBox(
+                                  width: leftWidth,
+                                  height: effectiveLeftHeight,
+                                  child: Transform.scale(
+                                    scale: effectiveLeftScale,
+                                    alignment: Alignment.centerRight,
+                                    child: Image.network(
+                                      leftDoorUrl,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
-                      ],
+
+                              // RIGHT
+                              Transform.translate(
+                                offset: Offset(
+                                  effectiveRightOffset.dx + rightTranslateX,
+                                  effectiveRightOffset.dy,
+                                ),
+                                child: SizedBox(
+                                  width: rightWidth,
+                                  height: effectiveRightHeight,
+                                  child: Transform.scale(
+                                    scale: effectiveRightScale,
+                                    alignment: Alignment.centerLeft,
+                                    child: Image.network(
+                                      rightDoorUrl,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
-                  ),
+
+                    // CENTER: Rectangle + Glamping (either shown or hidden depending on showExploreButton)
+                    Transform.translate(
+                      offset: centerRectOffset,
+                      child: SizedBox(
+                        width: rectWidth,
+                        height: rectHeight,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Rectangle (hidden when showExploreButton == true)
+                            if (!showExploreButton)
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () async {
+                                  print('🟦 Tapped on Rectangle');
+                                  await _handleCenterTapSource('Rectangle');
+                                },
+                                child: Image.network(
+                                  centerRectUrl,
+                                  fit: BoxFit.contain,
+                                  width: rectWidth,
+                                  height: rectHeight,
+                                ),
+                              ),
+
+                            // Glamping image (on top). Hidden when showExploreButton == true
+                            if (!showExploreButton)
+                              GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTap: () async {
+                                  print('🟩 Tapped on Glamping');
+                                  await _handleCenterTapSource('Glamping');
+                                },
+                                child: Transform.translate(
+                                  offset: glampOffset,
+                                  child: Transform.scale(
+                                    scale: glampScale,
+                                    child: Image.network(
+                                      centerGlampUrl,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            // If images are hidden and user is auth: show a temporary button (animation already started)
+                            if (showExploreButton && isAuth)
+                              ElevatedButton(
+                                onPressed: () async {
+                                  print("⭐ Let's Explore (manual) pressed");
+                                  // If user presses manually, start animation too (safe-guard)
+                                  await _startAnimation();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16.0,
+                                    vertical: 10.0,
+                                  ),
+                                  child: Text("Let's Explore"),
+                                ),
+                              ),
+
+                            // Edge-case: if showExploreButton true but user lost session, show login prompt
+                            if (showExploreButton && !isAuth)
+                              ElevatedButton(
+                                onPressed: () async {
+                                  final bool? res = await Navigator.of(context)
+                                      .push<bool?>(
+                                        MaterialPageRoute<bool?>(
+                                          builder: (_) => const LoginScreen(),
+                                        ),
+                                      );
+                                  if (res == true && mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Login successful — tap Explore to continue',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16.0,
+                                    vertical: 10.0,
+                                  ),
+                                  child: Text("Login to Explore"),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
 
-        // ------------------------------
-        // LOADING OVERLAY (2 seconds)
-        // ------------------------------
+        // Loading overlay while animation runs
         if (isLoading)
           Container(
             color: Colors.black.withOpacity(0.55),

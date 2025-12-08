@@ -36,38 +36,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     'https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/login/Hangukverse+(7)+5.png',
   ];
 
-  /// Normalize / safely encode S3 object URL.
-  /// - Returns '' when input is invalid.
-  /// - Encodes spaces to %20, encodes other unsafe chars via Uri.encodeFull,
-  ///   and preserves '+' characters (common in your keys).
   String _useS3Url(String input) {
     final raw = input.trim();
     if (raw.isEmpty) return '';
 
-    // Accept only http(s) URLs here (safer).
     if (!(raw.startsWith('http://') || raw.startsWith('https://'))) {
       return '';
     }
 
-    // If URL is not for our S3 host, still return it but encode spaces.
     if (!raw.startsWith(_s3Base)) {
       return raw.replaceAll(' ', '%20');
     }
 
     try {
-      // Convert literal spaces to %20 (common paste issue).
       var step1 = raw.replaceAll(' ', '%20');
-
-      // Uri.encodeFull will percent-encode characters such as '(' ')' etc.
       final encoded = Uri.encodeFull(step1);
-
       return encoded;
     } catch (_) {
       return '';
     }
   }
 
-  /// Unified safe S3 image widget used across screens.
   Widget _s3ImageWidget(
     String src, {
     double? width,
@@ -76,7 +65,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }) {
     final url = _useS3Url(src);
 
-    // If invalid URL, show a fallback placeholder to avoid network errors.
     if (url.isEmpty) {
       return Container(
         width: width,
@@ -129,11 +117,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     if (!mounted) return;
+
+    // If this screen was pushed from another route, pop with success result.
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context, true); // signal success back to caller
+      return;
+    }
+
+    // Otherwise behave as before: go to Home as top-level replacement.
     Navigator.pushReplacementNamed(context, HomeScreen.routeName);
   }
 
   void _onGooglePressed() async {
     await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+
+    final state = ref.read(authNotifierProvider);
+    if (state.errorMessage != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+      return;
+    }
+
+    if (!mounted) return;
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context, true);
+    } else {
+      Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+    }
   }
 
   @override
@@ -154,7 +166,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     const signupPrompt = Color(0xFF3B6F90);
     const signupTextColor = Color(0xFF223E50);
 
-    // choose images (same ordering as register)
     final fullBackground = _s3Images.length > 2 ? _s3Images[2] : _s3Images[0];
     final headerImg = _s3Images.length > 3 ? _s3Images[3] : _s3Images[1];
     final cardBg = _s3Images[0];
@@ -176,11 +187,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Background image (like register — full-bleed)
           Positioned.fill(
             child: _s3ImageWidget(fullBackground, fit: BoxFit.cover),
           ),
-          // dark overlay for readability
           Positioned.fill(
             child: Container(color: Colors.black.withOpacity(0.32)),
           ),
@@ -190,14 +199,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               builder: (context, constraints) {
                 return SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  // <-- removed the extra +24 bottom gap so footer image sits flush
                   padding: EdgeInsets.only(bottom: bottomInset),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: maxH),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // HEADER IMAGE
                         Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: maxW * 0.05,
@@ -212,7 +219,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
 
-                        // CARD
                         Center(
                           child: Column(
                             children: [
@@ -252,7 +258,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             children: [
                                               SizedBox(height: gapSmall),
 
-                                              // Email label
                                               Text(
                                                 "Email",
                                                 style: TextStyle(
@@ -266,7 +271,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               ),
                                               SizedBox(height: gapSmall / 1.2),
 
-                                              // Email field
                                               SizedBox(
                                                 height: fieldHeight,
                                                 child: TextFormField(
@@ -307,7 +311,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                                               SizedBox(height: gapMedium),
 
-                                              // Password label
                                               Text(
                                                 "Password",
                                                 style: TextStyle(
@@ -321,7 +324,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               ),
                                               SizedBox(height: gapSmall / 1.2),
 
-                                              // Password field
                                               SizedBox(
                                                 height: fieldHeight,
                                                 child: TextFormField(
@@ -375,7 +377,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                                               SizedBox(height: gapMedium),
 
-                                              // Login button
                                               SizedBox(
                                                 height: fieldHeight,
                                                 width: double.infinity,
@@ -436,7 +437,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                                               SizedBox(height: gapSmall),
 
-                                              // Forgot password
                                               Align(
                                                 alignment:
                                                     Alignment.centerRight,
@@ -478,7 +478,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                                               SizedBox(height: gapSmall),
 
-                                              // OR divider
                                               Row(
                                                 children: [
                                                   const Expanded(
@@ -511,7 +510,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                                               SizedBox(height: gapSmall),
 
-                                              // Google button
                                               SizedBox(
                                                 height: btnHeight,
                                                 child: ElevatedButton(
@@ -541,7 +539,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                                               SizedBox(height: 20),
 
-                                              // Sign up prompt
                                               Center(
                                                 child: Container(
                                                   padding:
@@ -614,7 +611,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
 
-                        // FOOTER IMAGE
                         Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: maxW * 0.05,
