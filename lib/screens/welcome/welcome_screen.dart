@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hangukverse/screens/auth/login_screen.dart';
 import 'package:hangukverse/screens/home/home_screen.dart';
+import 'package:hangukverse/screens/lift/lift_sreen.dart'; // <- added import
 import '../../providers/auth_provider.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
@@ -96,8 +97,39 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             ref.read(authNotifierProvider.notifier).currentUser != null;
 
         if (supaUserPresent) {
-          // user is authenticated -> proceed to Home
-          Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+          // navigator -> replace with LiftScreen using a custom animated route
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const LiftScreen(),
+              transitionDuration: const Duration(milliseconds: 550),
+              reverseTransitionDuration: const Duration(milliseconds: 400),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      ),
+                    );
+                    final slide =
+                        Tween<Offset>(
+                          begin: const Offset(0.0, 0.18), // slide up slightly
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          ),
+                        );
+
+                    return FadeTransition(
+                      opacity: fade,
+                      child: SlideTransition(position: slide, child: child),
+                    );
+                  },
+            ),
+          );
         }
       }
     });
@@ -365,7 +397,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                               ElevatedButton(
                                 onPressed: () async {
                                   print("⭐ Let's Explore (manual) pressed");
-                                  // If user presses manually, start animation too (safe-guard)
+                                  // Keep experience consistent: start door animation which will navigate when complete.
                                   await _startAnimation();
                                 },
                                 style: ElevatedButton.styleFrom(
