@@ -40,7 +40,6 @@ class LiftScreen extends StatelessWidget {
 
   static const String liftBgUrl =
       "https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/lift/interior.png";
-
   static const String liftDoorUrl =
       "https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/lift/lift_door.png";
 
@@ -165,7 +164,7 @@ class LiftScreen extends StatelessWidget {
               ),
 
               // --------------------------------------------------
-              // ✅ CENTERED & FULLY ADJUSTABLE BUTTON PANEL
+              // ✅ CENTERED & FULLY ADJUSTABLE BUTTON PANEL (UNCHANGED)
               // --------------------------------------------------
               Positioned(
                 left:
@@ -196,6 +195,37 @@ class LiftScreen extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // --------------------------------------------------
+              // ✅ ✅ ✅ "CALL THE LIFT" CENTER BUTTON
+              // --------------------------------------------------
+              Positioned(
+                left: (screenWidth / 2) - 90,
+                top: (screenHeight / 2) + (leftDoorWidth / 0.99),
+                child: GestureDetector(
+                  onTap: () {
+                    print("CALL THE LIFT button pressed");
+                  },
+                  child: Container(
+                    width: 180,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD58AD9),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      "Call the Lift",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           );
         },
@@ -218,15 +248,11 @@ class LiftScreen extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: Colors.green, // ✅ ONLY CHANGE: GREEN FILL COLOR
+          color: Colors.green,
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 1.5),
         ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: size * 0.65,
-        ), // ✅ Arrow stays WHITE
+        child: Icon(icon, color: Colors.white, size: size * 0.65),
       ),
     );
   }
