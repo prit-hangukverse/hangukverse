@@ -8,6 +8,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hangukverse/screens/lift/floor/first_f.dart';
 
 class InLiftScreen extends StatefulWidget {
+  static const routeName = "/in-lift";
+
   const InLiftScreen({super.key});
 
   /// Images

@@ -17,10 +17,8 @@ class WelcomeScreen extends ConsumerStatefulWidget {
 
 class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     with SingleTickerProviderStateMixin {
-  bool isLoading = false;
-
   /// When true, the Rectangle + Glamping images are hidden and the "Explore"
-  /// UI is shown (we reuse the same flag name for familiarity).
+  /// button is shown.
   bool showExploreButton = false;
 
   // ===========================================================
@@ -81,56 +79,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       curve: Curves.easeInOutCubic,
     );
 
-    _animController.addStatusListener((status) async {
+    // NOTE: removed automatic navigation on animation completion.
+    // We intentionally do NOT navigate here so the user can tap "Let's Explore"
+    // to actively navigate to the LiftScreen (as requested).
+    _animController.addStatusListener((status) {
+      // keep this listener in case you want to react to completed status later
+      // but do not perform navigation or show/hide loading UI here.
       if (status == AnimationStatus.completed) {
-        // optional slight pause to settle visuals
-        await Future.delayed(const Duration(milliseconds: 120));
-        if (!mounted) return;
-
-        setState(() {
-          isLoading = false;
-          showExploreButton = false;
-        });
-
-        // AFTER animation: check actual Supabase user presence using notifier
-        final supaUserPresent =
-            ref.read(authNotifierProvider.notifier).currentUser != null;
-
-        if (supaUserPresent) {
-          // navigator -> replace with LiftScreen using a custom animated route
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const LiftScreen(),
-              transitionDuration: const Duration(milliseconds: 550),
-              reverseTransitionDuration: const Duration(milliseconds: 400),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                    final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      ),
-                    );
-                    final slide =
-                        Tween<Offset>(
-                          begin: const Offset(0.0, 0.18), // slide up slightly
-                          end: Offset.zero,
-                        ).animate(
-                          CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                          ),
-                        );
-
-                    return FadeTransition(
-                      opacity: fade,
-                      child: SlideTransition(position: slide, child: child),
-                    );
-                  },
-            ),
-          );
-        }
+        // nothing automatic — button press will navigate
       }
     });
   }
@@ -141,50 +97,29 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     super.dispose();
   }
 
-  /// Start door animation and show loading overlay until completion.
+  /// Start door animation (no global loading overlay).
   Future<void> _startAnimation() async {
     if (_animController.isAnimating) return;
-    setState(() {
-      isLoading = true;
-    });
     await _animController.forward();
   }
 
-  /// Handle tap on either Rectangle or Glamping.
-  ///
-  /// - If unauthenticated: push LoginScreen (typed route). After successful login,
-  ///   show snackbar telling user to tap again (do NOT auto-start animation).
-  /// - If authenticated: hide images and start animation immediately.
+  /// Handle tap on the center elements.
+  /// As requested: tapping **Glamping** starts the door animation and shows the
+  /// "Let's Explore" button. Rectangle tap is ignored (so only glamping triggers).
   Future<void> _handleCenterTapSource(String source) async {
     // debug log which child was tapped
     print('Tapped: $source');
 
-    final supaUserPresent =
-        ref.read(authNotifierProvider.notifier).currentUser != null;
-
-    if (!supaUserPresent) {
-      // push login as a typed route so we safely receive a bool? result
-      final bool? loginResult = await Navigator.of(context).push<bool?>(
-        MaterialPageRoute<bool?>(builder: (_) => const LoginScreen()),
-      );
-
-      print('LoginScreen returned: $loginResult');
-
-      if (loginResult == true) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login successful — tap again to enter'),
-            ),
-          );
-        }
-      }
+    // Only start animation when Glamping is tapped (per your request)
+    if (source != 'Glamping') {
       return;
     }
 
-    // Authenticated: hide images and start animation together
+    if (_animController.isAnimating) return;
+
     setState(() {
-      showExploreButton = true; // hides Rectangle + Glamping UI
+      showExploreButton =
+          true; // hides Rectangle + Glamping UI and shows button
     });
 
     // tiny delay to ensure UI paints the hide; keeps hide+animation visually simultaneous
@@ -224,7 +159,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     final double leftMaxTranslate = -(leftWidth * 1.1);
     final double rightMaxTranslate = (rightWidth * 1.1);
 
-    // reactive auth read for UI
+    // reactive auth read for UI (kept in case you still want auth-driven UI elsewhere)
     final authState = ref.watch(authNotifierProvider);
     final isAuthReactive = authState.userEmail != null;
     final isAuthImmediate =
@@ -361,8 +296,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                               GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () async {
-                                  print('🟦 Tapped on Rectangle');
-                                  await _handleCenterTapSource('Rectangle');
+                                  // Rectangle tap is intentionally ignored per request.
+                                  print(
+                                    'Rectangle tapped — no action (only Glamping starts the flow).',
+                                  );
                                 },
                                 child: Image.network(
                                   centerRectUrl,
@@ -392,13 +329,68 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                                 ),
                               ),
 
-                            // If images are hidden and user is auth: show a temporary button (animation already started)
-                            if (showExploreButton && isAuth)
+                            // If images are hidden: show the Explore button.
+                            if (showExploreButton)
                               ElevatedButton(
                                 onPressed: () async {
-                                  print("⭐ Let's Explore (manual) pressed");
-                                  // Keep experience consistent: start door animation which will navigate when complete.
-                                  await _startAnimation();
+                                  print(
+                                    "⭐ Let's Explore pressed — navigating to LiftScreen",
+                                  );
+                                  // Immediately navigate to LiftScreen when the user taps the button.
+                                  Navigator.of(context).pushReplacement(
+                                    PageRouteBuilder(
+                                      pageBuilder:
+                                          (
+                                            context,
+                                            animation,
+                                            secondaryAnimation,
+                                          ) => const LiftScreen(),
+                                      transitionDuration: const Duration(
+                                        milliseconds: 550,
+                                      ),
+                                      reverseTransitionDuration: const Duration(
+                                        milliseconds: 400,
+                                      ),
+                                      transitionsBuilder:
+                                          (
+                                            context,
+                                            animation,
+                                            secondaryAnimation,
+                                            child,
+                                          ) {
+                                            final fade =
+                                                Tween<double>(
+                                                  begin: 0.0,
+                                                  end: 1.0,
+                                                ).animate(
+                                                  CurvedAnimation(
+                                                    parent: animation,
+                                                    curve: Curves.easeInOut,
+                                                  ),
+                                                );
+                                            final slide =
+                                                Tween<Offset>(
+                                                  begin: const Offset(
+                                                    0.0,
+                                                    0.18,
+                                                  ),
+                                                  end: Offset.zero,
+                                                ).animate(
+                                                  CurvedAnimation(
+                                                    parent: animation,
+                                                    curve: Curves.easeOutCubic,
+                                                  ),
+                                                );
+                                            return FadeTransition(
+                                              opacity: fade,
+                                              child: SlideTransition(
+                                                position: slide,
+                                                child: child,
+                                              ),
+                                            );
+                                          },
+                                    ),
+                                  );
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
@@ -415,42 +407,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                                   child: Text("Let's Explore"),
                                 ),
                               ),
-
-                            // Edge-case: if showExploreButton true but user lost session, show login prompt
-                            if (showExploreButton && !isAuth)
-                              ElevatedButton(
-                                onPressed: () async {
-                                  final bool? res = await Navigator.of(context)
-                                      .push<bool?>(
-                                        MaterialPageRoute<bool?>(
-                                          builder: (_) => const LoginScreen(),
-                                        ),
-                                      );
-                                  if (res == true && mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Login successful — tap Explore to continue',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.black,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 16.0,
-                                    vertical: 10.0,
-                                  ),
-                                  child: Text("Login to Explore"),
-                                ),
-                              ),
                           ],
                         ),
                       ),
@@ -462,17 +418,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           ),
         ),
 
-        // Loading overlay while animation runs
-        if (isLoading)
-          Container(
-            color: Colors.black.withOpacity(0.55),
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 3,
-              ),
-            ),
-          ),
+        // IMPORTANT: removed the loading overlay completely as requested.
       ],
     );
   }
