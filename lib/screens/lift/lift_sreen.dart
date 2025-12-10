@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:hangukverse/screens/lift/in_lift.dart' show InLiftScreen;
 
 class LiftScreen extends StatefulWidget {
   static const routeName = "/lift";
@@ -58,7 +59,7 @@ class _LiftScreenState extends State<LiftScreen>
   static const String liftDoorUrl =
       "https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/lift/lift_door.png";
   static const String liftBackUrl =
-      "https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/lift/lift_back.png";
+      "https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/lift/lift_background.png";
   static const String liftGetUrl =
       "https://hangukversewebassets.s3.ap-south-1.amazonaws.com/assets/lift/get.png";
 
@@ -187,32 +188,23 @@ class _LiftScreenState extends State<LiftScreen>
             fit: StackFit.expand,
             children: [
               // --------------------------
-              // LIFT BACK (you want to zoom/move this)
+              // LIFT BACK (responsive, covers entire area)
               // --------------------------
               Positioned.fill(
-                child: Transform.translate(
-                  offset: Offset(backTranslateX, backTranslateY),
-                  child: Transform.scale(
-                    scale: backScale,
-                    alignment: Alignment.center,
-                    child: Transform.rotate(
-                      angle: 3.1415926535, // 180 degrees in radians
-                      child: CachedNetworkImage(
-                        imageUrl: liftBackUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        ),
-                        errorWidget: (context, url, error) => const Center(
-                          child: Text(
-                            "Failed to load back image",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        cacheKey: "lift_back_image",
-                      ),
+                child: CachedNetworkImage(
+                  imageUrl: liftBackUrl,
+                  fit: BoxFit.cover, // <-- fill and crop edges (no extra space)
+                  alignment: Alignment.center, // center the image
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                  errorWidget: (context, url, error) => const Center(
+                    child: Text(
+                      "Failed to load back image",
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
+                  cacheKey: "lift_back_image",
                 ),
               ),
 
@@ -246,23 +238,34 @@ class _LiftScreenState extends State<LiftScreen>
               // --------------------------
               // NEW: get.png centered between doors, behind doors (above lift_back)
               // --------------------------
+              // --------------------------
+              // NEW: get.png with tap → open InLiftScreen
+              // --------------------------
               Positioned(
                 left: getLeft,
-                top: getTop + getOffsetY, // <-- apply vertical offset here
+                top: getTop + getOffsetY,
                 width: getWidth,
-                child: CachedNetworkImage(
-                  imageUrl: liftGetUrl,
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                  errorWidget: (context, url, error) => const Center(
-                    child: Text(
-                      "Failed to load get image",
-                      style: TextStyle(color: Colors.white),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const InLiftScreen()),
+                    );
+                  },
+                  child: CachedNetworkImage(
+                    imageUrl: liftGetUrl,
+                    fit: BoxFit.contain,
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
                     ),
+                    errorWidget: (context, url, error) => const Center(
+                      child: Text(
+                        "Failed to load get image",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    cacheKey: "lift_get_image",
                   ),
-                  cacheKey: "lift_get_image",
                 ),
               ),
 
