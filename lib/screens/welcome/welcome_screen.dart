@@ -128,6 +128,31 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     await _startAnimation();
   }
 
+  /// New handler that enforces authentication before starting animation.
+  /// MUST NOT start animation automatically after login.
+  Future<void> _onGlampingTap() async {
+    // 1. Check if user is authenticated
+    final authState = ref.read(authNotifierProvider);
+    final isAuthReactive = authState.userEmail != null;
+    final isAuthImmediate =
+        ref.read(authNotifierProvider.notifier).currentUser != null;
+    final isAuth = isAuthReactive || isAuthImmediate;
+
+    // 2. If NOT authenticated → Navigate to LoginScreen
+    if (!isAuth) {
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (context) => const LoginScreen()));
+
+      // After returning from LoginScreen, DO NOT start animation.
+      // User MUST TAP GLAMPING AGAIN.
+      return;
+    }
+
+    // 3. User IS authenticated → Now start the normal animation flow
+    await _handleCenterTapSource('Glamping');
+  }
+
   @override
   Widget build(BuildContext context) {
     final maxW = MediaQuery.of(context).size.width;
@@ -315,7 +340,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                                 behavior: HitTestBehavior.translucent,
                                 onTap: () async {
                                   print('🟩 Tapped on Glamping');
-                                  await _handleCenterTapSource('Glamping');
+                                  await _onGlampingTap();
                                 },
                                 child: Transform.translate(
                                   offset: glampOffset,
